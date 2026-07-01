@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environment
+.env
+
+# Runtime data
+logs/
+data/chroma_db/
+data/chroma/
+data/vosk-model*/
+
+# OS / editor
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1 @@
+"""HoloHome FastAPI server."""

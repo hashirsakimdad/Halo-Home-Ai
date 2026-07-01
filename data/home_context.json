@@ -1,0 +1,14 @@
+{
+  "home_name": "HoloHome",
+  "rooms": ["living room", "bedroom", "kitchen", "office"],
+  "devices": {
+    "living_room_light": "light.living_room",
+    "bedroom_light": "light.bedroom"
+  },
+  "user_preferences": {
+    "language": "en-ur",
+    "wake_word": "hey holo",
+    "temperature_unit": "celsius"
+  },
+  "timezone": "Asia/Karachi"
+}

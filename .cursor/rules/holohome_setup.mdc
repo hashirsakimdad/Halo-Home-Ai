@@ -1,0 +1,25 @@
+---
+description: HoloHome AI auto setup — run setup_check.py first, fix imports, make Phase 1 work
+alwaysApply: true
+---
+
+# HoloHome AI — Auto Setup
+
+Run `python setup_check.py` from project root **before** any other work.
+
+## Workflow
+
+1. Create/verify `setup_check.py` exists
+2. Run: `cd "D:\HaloHome AI"` then `.venv\Scripts\activate` then `python setup_check.py`
+3. Fix every import error and missing file reported
+4. Re-run until ALL CHECKS PASSED
+5. Test: `python main.py --mode text`
+
+## Rules
+
+- NEVER delete existing working code — only fix/add
+- ALWAYS re-run `setup_check.py` after fixes
+- Project root: `D:\HaloHome AI`
+- Virtual env: `D:\HaloHome AI\.venv`
+- ChromaDB path: `data/chroma_db`
+- If Ollama not running: remind user to run `ollama serve` in separate terminal
