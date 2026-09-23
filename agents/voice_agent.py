@@ -90,4 +90,5 @@ class VoiceAgent(BaseAgent):
     async def run(self, task: str, context: dict) -> str:
         """Process a voice-related request or general conversation."""
         system = context.get("system_prompt", self.VOICE_SYSTEM)
-        return await self.llm.holohome_chat(task, extra_system=system)
+        history = context.get("history")
+        return await self.llm.holohome_chat(task, extra_system=system, history=history)

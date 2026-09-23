@@ -22,11 +22,12 @@ class SecurityAgent(BaseAgent):
     async def run(self, task: str, context: dict) -> str:
         """Handle security monitoring and alert requests."""
         system = context.get("system_prompt", self.SECURITY_SYSTEM)
-        history = await self.recall("security")
+        chat_history = context.get("history")
+        prior = await self.recall("security")
         prompt = task
-        if history:
-            prompt = f"Recent security events:\n{history}\n\nUser request: {task}"
+        if prior:
+            prompt = f"Recent security events:\n{prior}\n\nUser request: {task}"
 
-        response = await self.llm.holohome_chat(prompt, extra_system=system)
+        response = await self.llm.holohome_chat(prompt, extra_system=system, history=chat_history)
         await self.remember("security", f"{task} -> {response}")
         return response

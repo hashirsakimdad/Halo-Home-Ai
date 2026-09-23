@@ -1,7 +1,10 @@
 """Ollama LLM wrapper — all agent LLM calls go through this module."""
 
+from __future__ import annotations
+
 import json
 import logging
+from collections import deque
 
 import httpx
 
@@ -16,6 +19,8 @@ from config.settings import (
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MAX_HISTORY = 20
+
 
 def load_home_context() -> str:
     """Load home context JSON for injection into the system prompt."""
@@ -26,6 +31,29 @@ def load_home_context() -> str:
     except OSError as exc:
         logger.warning("Could not read home context: %s", exc)
         return "{}"
+
+
+class ConversationHistory:
+    """Rolling buffer of chat messages for multi-turn context."""
+
+    def __init__(self, max_turns: int = DEFAULT_MAX_HISTORY):
+        self._max = max_turns * 2
+        self._messages: deque[dict[str, str]] = deque(maxlen=self._max)
+
+    def add_user(self, content: str) -> None:
+        self._messages.append({"role": "user", "content": content})
+
+    def add_assistant(self, content: str) -> None:
+        self._messages.append({"role": "assistant", "content": content})
+
+    def get_messages(self) -> list[dict[str, str]]:
+        return list(self._messages)
+
+    def clear(self) -> None:
+        self._messages.clear()
+
+    def __len__(self) -> int:
+        return len(self._messages)
 
 
 class LLMClient:
@@ -42,11 +70,18 @@ class LLMClient:
         self.base_url = (base_url or OLLAMA_BASE_URL).rstrip("/")
         self.timeout = timeout or OLLAMA_TIMEOUT
 
-    async def chat(self, prompt: str, system: str | None = None) -> str:
+    async def chat(
+        self,
+        prompt: str,
+        system: str | None = None,
+        history: ConversationHistory | None = None,
+    ) -> str:
         """Send a chat request to Ollama and return the assistant reply."""
-        messages = []
+        messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
+        if history:
+            messages.extend(history.get_messages())
         messages.append({"role": "user", "content": prompt})
 
         try:
@@ -61,13 +96,18 @@ class LLMClient:
             logger.error("Ollama chat failed: %s", exc)
             return OFFLINE_FALLBACK_RESPONSE
 
-    async def holohome_chat(self, prompt: str, extra_system: str | None = None) -> str:
+    async def holohome_chat(
+        self,
+        prompt: str,
+        extra_system: str | None = None,
+        history: ConversationHistory | None = None,
+    ) -> str:
         """Chat using the standard HoloHome system prompt with home context."""
         home_context = load_home_context()
         system = HOLOHOME_SYSTEM_PROMPT.format(home_context=home_context)
         if extra_system:
             system = f"{system}\n\n{extra_system}"
-        return await self.chat(prompt, system=system)
+        return await self.chat(prompt, system=system, history=history)
 
     async def is_available(self) -> bool:
         """Return True if Ollama responds to a health check."""

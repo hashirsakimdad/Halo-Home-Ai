@@ -22,11 +22,12 @@ class InteriorAgent(BaseAgent):
     async def run(self, task: str, context: dict) -> str:
         """Handle interior design and home improvement requests."""
         system = context.get("system_prompt", self.INTERIOR_SYSTEM)
+        history = context.get("history")
         prefs = await self.recall("interior preferences")
         prompt = task
         if prefs:
             prompt = f"User preferences:\n{prefs}\n\nRequest: {task}"
 
-        response = await self.llm.holohome_chat(prompt, extra_system=system)
+        response = await self.llm.holohome_chat(prompt, extra_system=system, history=history)
         await self.remember("interior", f"{task} -> {response}")
         return response
