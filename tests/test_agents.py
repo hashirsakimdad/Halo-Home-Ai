@@ -49,11 +49,31 @@ async def test_education_agent_run(mock_llm, mock_memory):
 
 
 @pytest.mark.asyncio
-async def test_schedule_agent_includes_time(mock_llm, mock_memory):
+async def test_schedule_agent_includes_time(mock_llm, mock_memory, tmp_path):
     agent = ScheduleAgent()
+    agent.llm.chat = AsyncMock(return_value='{"action": "query"}')
+    agent.llm.holohome_chat = AsyncMock(return_value="mocked response")
+    from core.calendar_store import CalendarStore
+    agent.calendar = CalendarStore(path=tmp_path / "cal.json")
     await agent.run("set a reminder", {"system_prompt": "test"})
-    call_args = mock_llm.holohome_chat.call_args[0][0]
+    call_args = agent.llm.holohome_chat.call_args[0][0]
     assert "Current time:" in call_args
+
+
+@pytest.mark.asyncio
+async def test_schedule_agent_creates_event(mock_llm, mock_memory, tmp_path):
+    """ScheduleAgent should create a calendar event when LLM extracts one."""
+    agent = ScheduleAgent()
+    event_json = '{"title": "Dentist", "start": "2099-06-15T14:00:00", "description": "", "remind_minutes_before": 0}'
+    agent.llm.chat = AsyncMock(return_value=event_json)
+    agent.llm.holohome_chat = AsyncMock(return_value="Scheduled dentist appointment.")
+    from core.calendar_store import CalendarStore
+    agent.calendar = CalendarStore(path=tmp_path / "cal.json")
+
+    result = await agent.run("schedule dentist friday at 2pm", {})
+    assert result == "Scheduled dentist appointment."
+    assert len(agent.calendar.list_all()) == 1
+    assert agent.calendar.list_all()[0]["title"] == "Dentist"
 
 
 @pytest.mark.asyncio

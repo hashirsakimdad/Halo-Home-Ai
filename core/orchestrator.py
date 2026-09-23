@@ -11,7 +11,7 @@ from agents.interior_agent import InteriorAgent
 from agents.schedule_agent import ScheduleAgent
 from agents.security_agent import SecurityAgent
 from agents.voice_agent import VoiceAgent
-from core.llm import LLMClient, load_home_context
+from core.llm import ConversationHistory, LLMClient, load_home_context
 from config.settings import HOLOHOME_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)

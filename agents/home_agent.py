@@ -46,6 +46,7 @@ class HomeAgent(BaseAgent):
     async def run(self, task: str, context: dict) -> str:
         """Handle smart home control requests, executing device commands when possible."""
         system = context.get("system_prompt", self.HOME_SYSTEM)
+        history = context.get("history")
         stored = await self.recall("home devices")
 
         command = await self._extract_command(task)
@@ -57,7 +58,7 @@ class HomeAgent(BaseAgent):
         if action_result:
             prompt += f"\n\n[Device action result: {action_result}]"
 
-        response = await self.llm.holohome_chat(prompt, extra_system=system)
+        response = await self.llm.holohome_chat(prompt, extra_system=system, history=history)
         await self.remember("home", f"{task} -> {response}")
         return response
 

@@ -22,11 +22,12 @@ class EducationAgent(BaseAgent):
     async def run(self, task: str, context: dict) -> str:
         """Handle education and tutoring requests."""
         system = context.get("system_prompt", self.EDUCATION_SYSTEM)
+        history = context.get("history")
         prior = await self.recall("education")
         prompt = task
         if prior:
             prompt = f"Previous learning context:\n{prior}\n\nUser question: {task}"
 
-        response = await self.llm.holohome_chat(prompt, extra_system=system)
+        response = await self.llm.holohome_chat(prompt, extra_system=system, history=history)
         await self.remember("education", f"Q: {task} A: {response}")
         return response

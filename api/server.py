@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from core.llm import LLMClient
+from core.llm import ConversationHistory, LLMClient
 from core.logging_setup import setup_logging
 from core.orchestrator import Orchestrator
 from config.settings import API_HOST, API_PORT
@@ -14,6 +14,7 @@ from config.settings import API_HOST, API_PORT
 logger = logging.getLogger(__name__)
 
 orchestrator: Orchestrator | None = None
+_sessions: dict[str, ConversationHistory] = {}
 
 
 @asynccontextmanager
@@ -34,6 +35,7 @@ class ChatRequest(BaseModel):
     """Incoming chat request body."""
 
     message: str
+    session_id: str = "default"
     context: dict | None = None
 
 
@@ -41,6 +43,7 @@ class ChatResponse(BaseModel):
     """Chat response with routing metadata."""
 
     response: str
+    session_id: str
     agent: str | None = None
 
 
@@ -61,9 +64,19 @@ async def health():
 async def chat(request: ChatRequest):
     """Process a text message through the orchestrator."""
     if orchestrator is None:
-        return ChatResponse(response="Service not ready.", agent=None)
-    response = await orchestrator.run(request.message, request.context)
-    return ChatResponse(response=response, agent=None)
+        return ChatResponse(response="Service not ready.", session_id=request.session_id, agent=None)
+
+    if request.session_id not in _sessions:
+        _sessions[request.session_id] = ConversationHistory()
+    history = _sessions[request.session_id]
+
+    ctx = dict(request.context or {})
+    ctx["history"] = history
+
+    response = await orchestrator.run(request.message, ctx)
+    history.add_user(request.message)
+    history.add_assistant(response)
+    return ChatResponse(response=response, session_id=request.session_id, agent=None)
 
 
 def run_server() -> None:

@@ -9,7 +9,7 @@ from core.logging_setup import setup_logging
 from core.orchestrator import Orchestrator
 from core.wake_word import WakeWordDetector
 from agents.voice_agent import VoiceAgent
-from core.llm import LLMClient
+from core.llm import ConversationHistory, LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ async def conversation_loop(
         display.start()
         display.render_text("HoloHome ready — say 'hey holo'")
 
+    history = ConversationHistory()
     llm = LLMClient()
     if not await llm.is_available():
         logger.warning("Ollama not reachable — offline fallback responses will be used")
@@ -67,7 +68,9 @@ async def conversation_loop(
             if display:
                 display.render_text("Thinking...")
 
-            response = await orchestrator.run(user_text)
+            response = await orchestrator.run(user_text, context={"history": history})
+            history.add_user(user_text)
+            history.add_assistant(response)
             await voice.speak(response)
             if display:
                 display.render_text(response)
@@ -92,6 +95,7 @@ async def text_loop(use_display: bool = False) -> None:
         display.start()
         display.render_text("HoloHome text mode — type 'quit' to exit")
 
+    history = ConversationHistory()
     print("HoloHome text mode — type 'quit' to exit.\n")
 
     try:
@@ -111,7 +115,9 @@ async def text_loop(use_display: bool = False) -> None:
             if display:
                 display.render_text("Thinking...")
 
-            response = await orchestrator.run(user_text)
+            response = await orchestrator.run(user_text, context={"history": history})
+            history.add_user(user_text)
+            history.add_assistant(response)
             print(f"HoloHome: {response}\n")
             if display:
                 display.render_text(response)
